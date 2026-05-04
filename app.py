@@ -5,10 +5,17 @@ import os
 
 app = Flask(__name__)
 
-# ─── Safe model loading (prevents crash) ───────────────────────────
+# ─── Correct path handling (VERY IMPORTANT for Render) ─────────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_PATH = os.path.join(BASE_DIR, "models", "svm_heart_model.pkl")
+SCALER_PATH = os.path.join(BASE_DIR, "models", "scaler.pkl")
+
+# ─── Load model safely ─────────────────────────────────────────────
 try:
-    model = joblib.load("models/svm_heart_model.pkl")
-    scaler = joblib.load("models/scaler.pkl")
+    model = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
+    print("Model loaded successfully")
 except Exception as e:
     print("ERROR LOADING MODEL:", e)
     model = None
@@ -28,11 +35,11 @@ EXPECTED_COLS = [
 def preprocess(data):
     df = pd.DataFrame([data])
 
-    # Fix datatype
+    # Convert categorical to float
     for col in ["cp", "restecg", "slope", "thal"]:
         df[col] = df[col].astype(float)
 
-    # Encoding
+    # One-hot encoding
     df = pd.get_dummies(df, drop_first=True)
 
     # Match training columns
@@ -45,6 +52,10 @@ def preprocess(data):
 def home():
     if request.method == "POST":
         try:
+            # ❗ Check if model loaded
+            if model is None or scaler is None:
+                return "ERROR: Model or scaler not loaded properly"
+
             data = {
                 "age": int(request.form["age"]),
                 "sex": int(request.form["sex"]),
@@ -73,17 +84,13 @@ def home():
             )
 
         except Exception as e:
-            return render_template(
-                "index.html",
-                prediction="Error",
-                probability=0,
-                error=str(e)
-            )
+            # 🔥 SHOW REAL ERROR (for debugging)
+            return f"ERROR OCCURRED: {str(e)}"
 
     return render_template("index.html")
 
 
-# ─── IMPORTANT FOR RENDER ──────────────────────────────────────────
+# ─── Render deployment config ──────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
