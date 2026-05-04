@@ -29,6 +29,7 @@ This project uses the Cleveland UCI Heart Disease dataset to train an SVM model 
 
 ## Project Structure
 
+```bash
 svm_heart_disease/
 ├── app.py                  
 ├── train.py                
@@ -50,9 +51,7 @@ svm_heart_disease/
 ├── notebooks/
 │   └── heart_disease_svm.ipynb
 │
-└── data/                   
-
----
+└── data/
 
 ## Installation
 
